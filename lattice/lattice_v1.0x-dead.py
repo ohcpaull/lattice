@@ -44,68 +44,79 @@ class lattice(object):
         self.oHKL = oHKL
         self.h, self.k, self.l = 0, 0, 0
         self.maxInt = 0   
-        
-        
-        
-                    
-        #self.filepath = self.xrdmlTestFile
         self.p = []
+        
+        self.axisraw = []
         self.substrateMat = substrateMat
         self.rsmRef = refHKL
-        self.axisraw = []
         
-        
-        #print(self.data.shape)
-        #[self.h, self.k, self.l] = input('Substrate reflection?').split(' ')
-        #print(str(self.h) + ' ' + str(self.k) + ' ' + str(self.l))
-        #self.rsmRef = (int(self.h), int(self.k), int(self.l))
-        
-        #print('rsmRef = ' + str(self.rsmRef))
-            
-        [self.substrate, self.hxrd] = self.initSubstrate( wavelength='CuKa12', **kwargs )
-
-        if filepath:
-            self.load_sub( filepath )
-
-
-            
-
-        #[self.omCorr, self.ttCorr] = self.hxrd.Q2Ang([self.qx, self.qy, self.qz])
-    def load_sub( self, filepath = None, refHKL = None ):
-
-        self.filepath = filepath
         if filepath is None:
-            self.filepath = self.openDialogue()   # open GUI for user to select file 
-        b = self.filepath.index('.') # find the period that separates filename and extension
-        a = self.filepath.rfind('/')  # find the slash that separates the directory and filename
-        ext = self.filepath[(b+1):] # get extension and determine whether it is RAS or XRDML
-        self.filename = self.filepath[(a+1):(b)]
+            self.filepath = self.openDialogue()   # open GUI for user to select file
+        else:
+            self.filepath = filepath          
+        #self.filepath = self.xrdmlTestFile
 
+        
+        b = self.filepath.index('.') # find the period that separates filename and extension
+        ext = self.filepath[(b+1):] # get extension and determine whether it is RAS or XRDML
+        
+        a = self.filepath.rfind('/')  # find the period that separates the directory and filename
+        self.filename = self.filepath[(a+1):(b)]
+        
         if ext == 'xrdml':
             (self.omega, self.tt, self.data) = self.xrdml_file(self, self.filepath)
-            #print('omega = ' + str(self.omega.shape))
-            #print('2theta = ' + str(self.tt.shape))
-            #print('data = ' + str(self.data.shape))
+            print('omega = ' + str(self.omega.shape))
+            print('2theta = ' + str(self.tt.shape))
+            print('data = ' + str(self.data.shape))
         elif ext == 'ras':
             (self.omega, self.tt, self.data) = self.ras_file(self, self.filepath)
         else:
             print('filetype not supported.')
-        if refHKL is None:    
-            self.p, [self.qx, self.qy, self.qz] = self.alignSubstratePeak()
-        else:
-            self.p, [self.qx, self.qy, self.qz] = self.alignSubstratePeak( refHKL )
 
-    def load_film( self, filepath = None ):
-        if filepath is None:
-            film_file = self.openDialogue()
-        else:
-            film_file = filepath
-        b = film_file.index('.') # find the period that separates filename and extension
-        ext = film_file[(b+1):] # get extension and determine whether it is RAS or XRDML
-        a = film_file.rfind('/')  # find the period that separates the directory and filename
-        (f_omega, f_tt, f_data) = self.xrdml_file( self, film_file )
-        return f_omega, f_tt, f_data
+        print(self.data.shape)
+        #[self.h, self.k, self.l] = input('Substrate reflection?').split(' ')
+        #print(str(self.h) + ' ' + str(self.k) + ' ' + str(self.l))
+        #self.rsmRef = (int(self.h), int(self.k), int(self.l))
+        
+        print('rsmRef = ' + str(self.rsmRef))
+            
+        [self.substrate, self.hxrd] = self.initSubstrate( **kwargs )
+        
+        self.anchor_map()
 
+        if film = yes:
+            load film
+        
+
+        #[self.omCorr, self.ttCorr] = self.hxrd.Q2Ang([self.qx, self.qy, self.qz])
+
+    def load_film( self ):
+        film_map = self.openDialogue()
+
+    def load_file( self, filepath ):
+
+
+        
+        b = filepath.index('.') # find the period that separates filename and extension
+        ext = filepath[(b+1):] # get extension and determine whether it is RAS or XRDML
+        
+        a = filepath.rfind('/')  # find the period that separates the directory and filename
+        filename = filepath[(a+1):(b)]
+        
+        if ext == 'xrdml':
+            (omega, tt, data) = self.xrdml_file(self, filepath)
+            print('omega = ' + str(omega.shape))
+            print('2theta = ' + str(tt.shape))
+            print('data = ' + str(data.shape))
+        elif ext == 'ras':
+            (omega, tt, data) = ras_file(self, filepath)
+        else:
+            print('filetype not supported.')
+        
+        return 
+
+    def anchor_map( self, **kwargs ):
+        self.p, [self.qx, self.qy, self.qz] = self.alignSubstratePeak( **kwargs )   
         
     @staticmethod
     def xrdml_file(self, file):
@@ -165,7 +176,11 @@ class lattice(object):
     def plot2d(self, ax=None, **kwargs):
         if ax is None:
             fig, ax = plt.subplots()
-
+        #plt.figure(figsize=[12,10])
+        
+        #listData= self.data.tolist()
+        
+        #ax.imshow(self.omega,self.tt, np.transpose(np.log10(self.data)).tolist(), cmap='jet', origin='lower', **kwargs)
         om = np.array(self.omega)
         tt = np.array(self.tt)
         if(om.ndim == 1 and tt.ndim == 1):
@@ -192,8 +207,8 @@ class lattice(object):
         fig.show()
         return ax
     
-    def plotQ(self, xGrid, yGrid, dynLow, dynHigh, fig=None, ax=None, nlev = None, **kwargs):
-        if ax is None or fig is None:
+    def plotQ(self, xGrid, yGrid, dynLow, dynHigh, ax=None, **kwargs):
+        if ax is None:
             fig, ax = plt.subplots()
         #ax.set_title( self.filename )
         
@@ -209,14 +224,14 @@ class lattice(object):
         levels = np.linspace(1, dynhigh, num=20)
         levels = 10**(levels)
         #print(levels)
-        ax.contourf(self.gridder.xaxis, self.gridder.yaxis, np.transpose(INT), nlev, **kwargs)
+        ax.contourf(self.gridder.xaxis, self.gridder.yaxis, np.transpose(INT),  **kwargs)
         #ax.colorbar(label='Data')
         #ax.set_aspect('equal')
         ax.set_xlabel(r'$Q_{[' + str(self.iHKL[0]) + '' + str(self.iHKL[1]) + '' + str(self.iHKL[2]) + ']}$', fontsize=18)
         ax.set_ylabel(r'$Q_{[' + str(self.oHKL[0]) + '' + str(self.oHKL[1]) + '' + str(self.oHKL[2]) + ']}$', fontsize=18)
         ax.tick_params(axis='both', which='major', labelsize=18)
         
-        return fig, ax
+        return ax
 
     def to_csv(self, fname=None):
         if fname is None:
@@ -238,19 +253,16 @@ class lattice(object):
         idx = (np.abs(array - value)).argmin()
         return array[idx]
 
-    def initSubstrate(self, geometry=None, **kwargs):
+    def initSubstrate(self, **kwargs):
         La = xu.materials.elements.La
         Al = xu.materials.elements.Al
-        O =  xu.materials.elements.O2m
+        O = xu.materials.elements.O2m
         Sr = xu.materials.elements.Sr
         Ti = xu.materials.elements.Ti
         Ta = xu.materials.elements.Ta
-        Y =  xu.materials.elements.Y
+        Y = xu.materials.elements.Y
         energy = 1240/0.154
         
-        if geometry is None:
-            geometry = 'hi_lo'
-
         #self.self.substrateMat = []
         while (self.substrateMat != 'LAO' and self.substrateMat != 'STO' and self.substrateMat != 'LSAT' and self.substrateMat != 'YAO'):
             self.substrateMat = input('Sample substrate (LAO, STO or LSAT)?')
@@ -273,7 +285,7 @@ class lattice(object):
             substrate = xu.materials.Crystal("LaAlO3", xu.materials.SGLattice(221, 3.784, \
                             atoms=[La, Al, O], pos=['1a', '1b', '3c']))
             hxrd = xu.HXRD(substrate.Q(int(self.iHKL[0]), int(self.iHKL[1]), int(self.iHKL[2])), \
-                           substrate.Q(int(self.oHKL[0]), int(self.oHKL[1]), int(self.oHKL[2])), en=energy, geometry = geometry)
+                           substrate.Q(int(self.oHKL[0]), int(self.oHKL[1]), int(self.oHKL[2])), en=energy, geometry = 'hi_lo')
         elif self.substrateMat == "STO":
             substrate = xu.materials.SrTiO3
             #substrate = xu.materials.Crystal("SrTiO3", xu.materials.SGLattice(221, 3.905, atoms=[Sr, Ti, O], \
@@ -296,7 +308,7 @@ class lattice(object):
            
         return [substrate, hxrd]
     
-    def alignSubstratePeak(self, delta = None):
+    def alignSubstratePeak(self, delta = None, **kwargs):
         nchannel = 255
         chpdeg = nchannel/2.511 #2.511 degrees is angular acceptance of xrays to detector
         center_ch = 128
@@ -304,13 +316,13 @@ class lattice(object):
 
         indexMax = np.argmax(self.data)
         self.maxInt = indexMax
-        #print('max index is ' + str(indexMax))
+        print('max index is ' + str(indexMax))
         data = np.array(self.data)
-        #print('data shape = ' + str(data.shape))
-        #print('omega shape = ' + str(self.omega.shape))
-        #print('2theta shape = ' + str(self.tt.shape))
+        print('data shape = ' + str(data.shape))
+        print('omega shape = ' + str(self.omega.shape))
+        print('2theta shape = ' + str(self.tt.shape))
         tupleIndex = np.unravel_index( indexMax, (len(self.data[:,0]), len(self.data[0,:])) )
-        #print('tupleIndex = ' + str(tupleIndex))
+        print('tupleIndex = ' + str(tupleIndex))
         
         
         [self.theoOm, dummy, dummy, self.theoTT] = self.hxrd.Q2Ang(self.substrate.Q(self.rsmRef))
@@ -320,8 +332,8 @@ class lattice(object):
         print('experimental tt = ' + str(expTT))
         print('theoretical omega = ' + str(self.theoOm))
         print('theoretical 2theta = ' + str(self.theoTT))
-        #print('omega shape = ' + str(self.omega.shape))
-        #print('expt omega = ' + str(self.omega[tupleIndex[0], tupleIndex[1]]))
+        print('omega shape = ' + str(self.omega.shape))
+        print('expt omega = ' + str(self.omega[tupleIndex[0], tupleIndex[1]]))
 
         expOm, expTT, p, cov = xu.analysis.fit_bragg_peak( self.omega, self.tt, self.data, expOm, expTT, self.hxrd, plot=False)
         
@@ -329,8 +341,11 @@ class lattice(object):
         omnominal = (self.theoTT/2) + offset
         self.hxrd.Ang2Q.init_linear('y+', center_ch, nchannel, chpdeg=chpdeg) 
 
+        #[omega, tt] = np.meshgrid(self.omega, self.tt)
+        #print('shape of omega is' + str(np.array(omega).shape))
+        #print((self.omega[tupleIndex[0]]+ tupleIndex[1] * self.stepSize/2) )
         if delta is None:
-            self.delta = (expOm - self.theoOm, expTT - self.theoTT)
+            self.delta = (self.omega[tupleIndex[0], tupleIndex[1]] - self.theoOm, self.tt[tupleIndex[0], tupleIndex[1]] - self.theoTT)
         else:
              self.delta = delta
         print('delta = ' + str( self.delta ) )
